@@ -1,29 +1,20 @@
-package com.imguru.problems;
-
-import java.util.Collections;
+package com.imguru.problems.InMemoryDatabase;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
-class NoActiveTransactionException extends Exception {
-
-    NoActiveTransactionException(){
-        super("No Active Transaction");
-    }
-
-}
 public class InMemoryDatabaseSimulator {
 
-    private Map<String, String> permanentStorage;
-    private Stack<Map<String, String>> temporaryStorage;
+    private final Map<String, String> permanentStore;
+    private final Stack<Map<String, String>> transactionStack;
 
     InMemoryDatabaseSimulator(){
-        permanentStorage = new HashMap<>();
-        temporaryStorage = new Stack<>();
+        permanentStore = new HashMap<>();
+        transactionStack = new Stack<>();
     }
 
     public void begin(){
-        temporaryStorage.push(new HashMap<>());
+        transactionStack.push(new HashMap<>());
     }
 
     /**
@@ -34,11 +25,11 @@ public class InMemoryDatabaseSimulator {
      */
     public void set(String key, String value) throws NoActiveTransactionException{
 
-        if(temporaryStorage.isEmpty()){
+        if(transactionStack.isEmpty()){
             throw new NoActiveTransactionException();
         }
 
-        Map<String, String> currentTransaction = temporaryStorage.peek();
+        Map<String, String> currentTransaction = transactionStack.peek();
         currentTransaction.put(key, value);
 
     }
@@ -51,14 +42,14 @@ public class InMemoryDatabaseSimulator {
      */
     public String get(String key){
 
-        for(int x = temporaryStorage.size()-1; x>=0; x--){
-            Map<String, String> currentTransaction = temporaryStorage.get(x);
+        for(int x = transactionStack.size()-1; x>=0; x--){
+            Map<String, String> currentTransaction = transactionStack.get(x);
             if(currentTransaction.containsKey(key)){
                 return currentTransaction.get(key);
             }
         }
 
-        return permanentStorage.get(key);
+        return permanentStore.get(key);
     }
 
     /**
@@ -67,15 +58,15 @@ public class InMemoryDatabaseSimulator {
      * @throws NoActiveTransactionException if it is invoked when there is no currently active transaction
      */
     public void commit() throws NoActiveTransactionException{
-        if(temporaryStorage.isEmpty()){
+        if(transactionStack.isEmpty()){
             throw new NoActiveTransactionException();
         }
 
-        for(int i=0; i<temporaryStorage.size(); i++){
-            Map<String, String> currentTransaction = temporaryStorage.get(i);
-            permanentStorage.putAll(currentTransaction);
+        for(int i=0; i<transactionStack.size(); i++){
+            Map<String, String> currentTransaction = transactionStack.get(i);
+            permanentStore.putAll(currentTransaction);
         }
-        temporaryStorage  = new Stack<>();
+        transactionStack.clear();
     }
 
     /**
@@ -85,7 +76,7 @@ public class InMemoryDatabaseSimulator {
      * @return count(integer) of all the keys that are permanently stored in DB
      */
     public Integer count(){
-        return permanentStorage.size();
+        return permanentStore.size();
     }
 
     /**
@@ -94,8 +85,9 @@ public class InMemoryDatabaseSimulator {
      * @throws NoActiveTransactionException if it is invoked when there is no currently active transaction
      */
     public void rollback() throws NoActiveTransactionException{
-        if(temporaryStorage.isEmpty()){
+        if(transactionStack.isEmpty()){
             throw new NoActiveTransactionException();
         }
+        transactionStack.pop();
     }
 }

@@ -1,2 +1,4 @@
-package com.imguru.tcp_server;public class Main {
+package com.imguru.tcp_server;
+
+public class Main {
 }
